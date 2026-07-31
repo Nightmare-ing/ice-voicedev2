@@ -1,11 +1,18 @@
+import Markdown from "react-markdown";
 
 const Message = (props) => {
-    return <div
+    return (
+        <div
             className={props.role + "-message"}
-            style={{width: "fit-content", maxWidth: "80%", display: "inline-block"}}
+            style={{
+                width: "fit-content",
+                maxWidth: "80%",
+                display: "inline-block",
+            }}
         >
-        <p>{props.content}</p>
-    </div>
-}
+            <Markdown>{props.content}</Markdown>
+        </div>
+    );
+};
 
 export default Message;
