@@ -1,12 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Button, Form } from 'react-bootstrap';
-import { BeatLoader } from 'react-spinners';
+import React, { useEffect, useRef, useState } from "react";
+import { Button, Form } from "react-bootstrap";
+import { BeatLoader } from "react-spinners";
 
-import TextAppMessageList from './TextAppMessageList';
-import Constants from '../constants/Constants';
+import TextAppMessageList from "./TextAppMessageList";
+import Constants from "../constants/Constants";
 
 function TextApp() {
-
     // Set to true to block the user from sending another message
     const [isLoading, setIsLoading] = useState(false);
 
@@ -18,7 +17,10 @@ function TextApp() {
      */
     async function handleWelcome() {
         if (messages.length === 0) {
-            addMessage(Constants.Roles.Assistant, "Welcome, my name is Bucky. How can I help you?");
+            addMessage(
+                Constants.Roles.Assistant,
+                "Welcome, my name is Bucky. How can I help you?",
+            );
         }
     }
 
@@ -30,30 +32,48 @@ function TextApp() {
         e?.preventDefault();
         const input = inputRef.current.value?.trim();
         setIsLoading(true);
-        if(input) {
+        if (input) {
             addMessage(Constants.Roles.User, input);
             inputRef.current.value = "";
+
+            const data = await fetch(
+                "http://localhost:8888/.netlify/functions/completions",
+                {
+                    method: "POST",
+                    headers: {
+                        "x-api-key": import.meta.env.VITE_GEMINI_API_KEY,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify([
+                        ...messages,
+                        { role: Constants.Roles.User, content: input },
+                    ]),
+                },
+            ).then((res) => res.json());
 
             // TODO Perform a POST request to the HW11 Completions API
             //      https://cs571api.cs.wisc.edu/rest/s25/hw11/completions
             //      and display the response to the user.
-            
-            addMessage(Constants.Roles.Assistant, "I'll think about that...");
+
+            addMessage(Constants.Roles.Assistant, data.msg);
         }
         setIsLoading(false);
     }
 
     /**
      * Adds a message to the ongoing TextAppMessageList
-     * 
+     *
      * @param {string} role The role of the message; either "user", "assistant", or "developer"
      * @param {*} content The content of the message
      */
     function addMessage(role, content) {
-        setMessages(o => [...o, {
-            role: role,
-            content: content
-        }]);
+        setMessages((o) => [
+            ...o,
+            {
+                role: role,
+                content: content,
+            },
+        ]);
     }
 
     useEffect(() => {
@@ -62,17 +82,19 @@ function TextApp() {
 
     return (
         <div className="app">
-            <TextAppMessageList messages={messages}/>
-            {isLoading ? <BeatLoader color="#36d7b7"/> : <></>}
+            <TextAppMessageList messages={messages} />
+            {isLoading ? <BeatLoader color="#36d7b7" /> : <></>}
             <div className="input-area">
                 <Form className="inline-form" onSubmit={handleSend}>
                     <Form.Control
                         ref={inputRef}
                         style={{ marginRight: "0.5rem", display: "flex" }}
                         placeholder="Type a message..."
-                        aria-label='Type and submit to send a message.'
+                        aria-label="Type and submit to send a message."
                     />
-                    <Button type='submit' disabled={isLoading}>Send</Button>
+                    <Button type="submit" disabled={isLoading}>
+                        Send
+                    </Button>
                 </Form>
             </div>
         </div>
