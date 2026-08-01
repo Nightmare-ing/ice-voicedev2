@@ -54,19 +54,43 @@ function TextApp() {
                         thinking: {
                             type: "disabled",
                         },
-                        stream: false,
+                        stream: true,
                     }),
                 },
-            ).then((res) => res.json());
-
-            // TODO Perform a POST request to the HW11 Completions API
-            //      https://cs571api.cs.wisc.edu/rest/s25/hw11/completions
-            //      and display the response to the user.
-
-            addMessage(
-                Constants.Roles.Assistant,
-                data.choices[0].message.content,
             );
+
+            addMessage(Constants.Roles.Assistant, "");
+
+            const reader = data.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+            let done = false;
+            let buf = "";
+            while (!done) {
+                const { done, value } = await reader.read();
+                if (done) {
+                    break;
+                }
+                buf += decoder.decode(value, { stream: true });
+                const lines = buf.split("\n\n");
+                buf = lines.pop() ?? ""; // the last one may not complete
+                for (let line of lines) {
+                    if (line.startsWith("data: ")) {
+                        line = line.slice(6).trim();
+                    }
+                    if (line !== "[DONE]") {
+                        const delta = JSON.parse(line).choices[0].delta.content;
+                        setMessages((old) => {
+                            return [
+                                ...old.slice(0, -1),
+                                {
+                                    role: old.at(-1).role,
+                                    content: old.at(-1).content + delta,
+                                },
+                            ];
+                        });
+                    }
+                }
+            }
         }
         setIsLoading(false);
     }
