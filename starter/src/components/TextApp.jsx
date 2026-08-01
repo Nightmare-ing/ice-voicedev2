@@ -37,17 +37,25 @@ function TextApp() {
             inputRef.current.value = "";
 
             const data = await fetch(
-                "http://localhost:8888/.netlify/functions/completions",
+                "https://api.deepseek.com/chat/completions",
                 {
                     method: "POST",
                     headers: {
-                        "x-api-key": import.meta.env.VITE_GEMINI_API_KEY,
+                        Authorization:
+                            "Bearer " + import.meta.env.VITE_DEEPSEEK_API_KEY,
                         "Content-Type": "application/json",
                     },
-                    body: JSON.stringify([
-                        ...messages,
-                        { role: Constants.Roles.User, content: input },
-                    ]),
+                    body: JSON.stringify({
+                        messages: [
+                            ...messages,
+                            { role: Constants.Roles.User, content: input },
+                        ],
+                        model: "deepseek-v4-flash",
+                        thinking: {
+                            type: "disabled",
+                        },
+                        stream: false,
+                    }),
                 },
             ).then((res) => res.json());
 
@@ -55,7 +63,10 @@ function TextApp() {
             //      https://cs571api.cs.wisc.edu/rest/s25/hw11/completions
             //      and display the response to the user.
 
-            addMessage(Constants.Roles.Assistant, data.msg);
+            addMessage(
+                Constants.Roles.Assistant,
+                data.choices[0].message.content,
+            );
         }
         setIsLoading(false);
     }
